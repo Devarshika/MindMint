@@ -29,8 +29,6 @@ def extract_text(uploaded_file):
     else:
         return ""
 
-
-
 def summarize_with_gpt(text):
     response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
@@ -45,11 +43,13 @@ uploaded_file = st.file_uploader("Upload a file", type=["pdf", "docx", "txt"])
 
 if uploaded_file:
     with st.spinner("Extracting text..."):
-        text = docx2txt.process(uploaded_file)
-    if text:
+        text = extract_text(uploaded_file)
+
+    if text.strip():
         with st.spinner("Generating summary with GPT..."):
             summary = summarize_with_gpt(text)
-        st.success("Summary:")
+
+        st.success("✅ Summary generated")
         st.write(summary)
     else:
-        st.error("Unable to read file.")
+        st.error("❌ Could not extract text from the file.")
