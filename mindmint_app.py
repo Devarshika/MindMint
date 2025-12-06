@@ -11,17 +11,22 @@ st.write("Upload any document and get an accurate, human-like summary powered by
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def extract_text(file):
-    if file.type == "application/pdf":
-        reader = PyPDF2.PdfReader(file)
-        return " ".join(page.extract_text() for page in reader.pages)
-    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        doc = docx.Document(file)
-        return " ".join([para.text for para in doc.paragraphs])
-    elif file.type == "text/plain":
-        return file.read().decode("utf-8")
+def extract_text(uploaded_file):
+    if uploaded_file.type == "application/pdf":
+        reader = PyPDF2.PdfReader(uploaded_file)
+        return " ".join(
+            page.extract_text() for page in reader.pages if page.extract_text()
+        )
+
+    elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return docx2txt.process(uploaded_file)
+
+    elif uploaded_file.type == "text/plain":
+        return uploaded_file.read().decode("utf-8")
+
     else:
         return ""
+
 
 def summarize_with_gpt(text):
     response = openai.ChatCompletion.create(
