@@ -50,7 +50,7 @@ def summarize_with_gpt(text):
                     "content": f"Summarize this content briefly:\n\n{chunk}"
                 }
             ],
-            max_tokens=200
+            max_tokens=400
         )
 
         partial_summaries.append(response.choices[0].message.content)
