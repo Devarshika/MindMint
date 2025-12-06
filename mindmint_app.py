@@ -49,22 +49,26 @@ def summarize_with_gpt(text):
 
     return response.choices[0].message.content
 
-
-
 uploaded_file = st.file_uploader("Upload a file", type=["pdf", "docx", "txt"])
-
 if uploaded_file:
     with st.spinner("Extracting text..."):
         text = extract_text(uploaded_file)
 
-    if text.strip():
-        with st.spinner("Generating summary with GPT..."):
-            try:
+    if text and text.strip():
+        try:
+            with st.spinner("Generating summary with GPT..."):
                 summary = summarize_with_gpt(text)
-                st.success("✅ Summary generated")
-                st.write(summary)
-            except Exception:
-                st.error("⚠️ The document is too large. Please upload a smaller file or try again later.")
+
+            st.success("✅ Summary generated")
+            st.write(summary)
+
+        except Exception:
+            st.error(
+                "⚠️ The document is too large for now. "
+                "Please upload a smaller file or try again later."
+            )
+    else:
+        st.error("❌ Could not extract text from the file.")
 
 
         st.success("✅ Summary generated")
