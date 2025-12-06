@@ -1,56 +1,47 @@
 import streamlit as st
-from PyPDF2 import PdfReader
-import nltk
+import PyPDF2
+import docx
 import openai
+import os
 
-# Initialize NLTK
-nltk.download('punkt')
+st.set_page_config(page_title="MindMint | Smart Summarizer", page_icon="🧠")
 
-# Load OpenAI API key from Streamlit secrets
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+st.title("🧠 MindMint – Smart AI Summarizer")
+st.write("Upload any document and get an accurate, human-like summary powered by GPT.")
 
-# Function to extract text from PDF
-def extract_pdf_text(uploaded_file):
-    pdf = PdfReader(uploaded_file)
-    text = ""
-    for page in pdf.pages:
-        text += page.extract_text() + "\n"
-    return text
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# GPT-based summarizer
-def summarize_text_gpt(text, depth="short"):
-    depth_map = {"short": "a brief summary",
-                 "medium": "a detailed summary",
-                 "detailed": "a very detailed summary with key points"}
-    prompt = f"Please provide {depth_map.get(depth,'a brief summary')} of the following text:\n{text}"
-    
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role":"user","content":prompt}],
-            max_tokens=500
-        )
-        summary = response['choices'][0]['message']['content']
-    except Exception as e:
-        summary = f"Error generating summary: {e}"
-    
-    return summary
+def extract_text(file):
+    if file.type == "application/pdf":
+        reader = PyPDF2.PdfReader(file)
+        return " ".join(page.extract_text() for page in reader.pages)
+    elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        doc = docx.Document(file)
+        return " ".join([para.text for para in doc.paragraphs])
+    elif file.type == "text/plain":
+        return file.read().decode("utf-8")
+    else:
+        return ""
 
-# Streamlit UI
-st.set_page_config(page_title="MindMint AI", page_icon="🧠")
-st.title("🧠 MindMint — AI Study Companion")
+def summarize_with_gpt(text):
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert summarizer."},
+            {"role": "user", "content": f"Summarize the following text in under 200 words:\n\n{text}"}
+        ]
+    )
+    return response["choices"][0]["message"]["content"]
 
-uploaded_file = st.file_uploader("Upload a PDF to summarize", type="pdf")
+uploaded_file = st.file_uploader("Upload a file", type=["pdf", "docx", "txt"])
 
 if uploaded_file:
-    st.info("Extracting text...")
-    text = extract_pdf_text(uploaded_file)
-    
-    st.info("Select summary depth:")
-    depth = st.radio("Summary depth", ["short", "medium", "detailed"])
-    
-    if st.button("Generate Summary"):
-        with st.spinner("Generating summary using GPT..."):
-            summary = summarize_text_gpt(text, depth)
-        st.success("Summary generated!")
+    with st.spinner("Extracting text..."):
+        text = extract_text(uploaded_file)
+    if text:
+        with st.spinner("Generating summary with GPT..."):
+            summary = summarize_with_gpt(text)
+        st.success("Summary:")
         st.write(summary)
+    else:
+        st.error("Unable to read file.")
