@@ -1,9 +1,9 @@
 import streamlit as st
 import PyPDF2
 import docx2txt
-import openai
+from openai import OpenAI
 import os
-
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 st.set_page_config(page_title="MindMint | Smart Summarizer", page_icon="🧠")
 
 st.title("🧠 MindMint – Smart AI Summarizer")
@@ -30,14 +30,15 @@ def extract_text(uploaded_file):
         return ""
 
 def summarize_with_gpt(text):
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are an expert summarizer."},
-            {"role": "user", "content": f"Summarize the following text in under 200 words:\n\n{text}"}
+            {"role": "system", "content": "You are an expert academic summarizer."},
+            {"role": "user", "content": f"Summarize the following text clearly in under 200 words:\n\n{text}"}
         ]
     )
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
+
 
 uploaded_file = st.file_uploader("Upload a file", type=["pdf", "docx", "txt"])
 
