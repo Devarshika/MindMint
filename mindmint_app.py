@@ -10,8 +10,6 @@ st.set_page_config(page_title="MindMint | Smart Summarizer", page_icon="🧠")
 st.title("🧠 MindMint – Smart AI Summarizer")
 st.write("Upload any document and get an accurate, human-like summary powered by GPT.")
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 def extract_text(uploaded_file):
     file_name = uploaded_file.name.lower()
 
