@@ -32,29 +32,33 @@ def extract_text(uploaded_file):
         return ""
 
 def summarize_with_gpt(text):
-    MAX_CHARS = 6000  
-    trimmed_text = text[:MAX_CHARS]
+    CHUNK_SIZE = 2000
+    chunks = [text[i:i + CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are an expert academic summarizer. Be concise and clear."
-            },
-            {
-                "role": "user",
-                "content": (
-                    "Summarize the following content in clear bullet points "
-                    "(max 200 words):\n\n"
-                    f"{trimmed_text}"
-                )
-            }
-        ],
-        max_tokens=300
-    )
+    partial_summaries = []
 
-    return response.choices[0].message.content
+    for chunk in chunks[:5]:  # limit to first 5 chunks (safe for free tier)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert academic summarizer."
+                },
+                {
+                    "role": "user",
+                    "content": f"Summarize this content briefly:\n\n{chunk}"
+                }
+            ],
+            max_tokens=200
+        )
+
+        partial_summaries.append(response.choices[0].message.content)
+
+    # Final combined summary
+    final_summary = "\n\n".join(partial_summaries)
+    return final_summary
+
 
 uploaded_file = st.file_uploader(
     "Upload a file (PDF, DOCX, TXT)",
