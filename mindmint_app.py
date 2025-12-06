@@ -1,6 +1,6 @@
 import streamlit as st
 import PyPDF2
-import docx
+import docx2txt
 import openai
 import os
 
@@ -37,7 +37,7 @@ uploaded_file = st.file_uploader("Upload a file", type=["pdf", "docx", "txt"])
 
 if uploaded_file:
     with st.spinner("Extracting text..."):
-        text = extract_text(uploaded_file)
+        text = docx2txt.process(uploaded_file)
     if text:
         with st.spinner("Generating summary with GPT..."):
             summary = summarize_with_gpt(text)
