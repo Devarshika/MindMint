@@ -29,14 +29,26 @@ def extract_text(uploaded_file):
         return ""
 
 def summarize_with_gpt(text):
+    MAX_CHARS = 6000  # safe limit for free / new keys
+    trimmed_text = text[:MAX_CHARS]
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are an expert academic summarizer."},
-            {"role": "user", "content": f"Summarize the following text clearly in under 200 words:\n\n{text}"}
-        ]
+            {
+                "role": "system",
+                "content": "You are an expert academic summarizer. Be concise and clear."
+            },
+            {
+                "role": "user",
+                "content": f"Summarize the following content in clear bullet points (max 200 words):\n\n{trimmed_text}"
+            }
+        ],
+        max_tokens=300
     )
+
     return response.choices[0].message.content
+
 
 
 uploaded_file = st.file_uploader("Upload a file", type=["pdf", "docx", "txt"])
@@ -47,7 +59,13 @@ if uploaded_file:
 
     if text.strip():
         with st.spinner("Generating summary with GPT..."):
-            summary = summarize_with_gpt(text)
+            try:
+                summary = summarize_with_gpt(text)
+                st.success("✅ Summary generated")
+                st.write(summary)
+            except Exception:
+                st.error("⚠️ The document is too large. Please upload a smaller file or try again later.")
+
 
         st.success("✅ Summary generated")
         st.write(summary)
