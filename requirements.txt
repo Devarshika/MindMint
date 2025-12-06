@@ -7,3 +7,4 @@ scikit-learn
 tiktoken
 huggingface_hub
 sentence-transformers
+docx2txt
