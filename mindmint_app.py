@@ -13,17 +13,43 @@ st.write("Upload any document and get an accurate, human-like summary powered by
 def extract_text(uploaded_file):
     file_name = uploaded_file.name.lower()
 
+    # ---------- PDF Handling ----------
     if file_name.endswith(".pdf"):
-        reader = PyPDF2.PdfReader(uploaded_file)
-        return " ".join(
-            page.extract_text() for page in reader.pages if page.extract_text()
-        )
+        try:
+            reader = PyPDF2.PdfReader(uploaded_file)
 
+            text_pages = []
+            for page in reader.pages:
+                try:
+                    txt = page.extract_text() or ""
+                    text_pages.append(txt)
+                except:
+                    text_pages.append("")
+
+            full_text = "\n".join(text_pages)
+
+            if full_text.strip():
+                return full_text
+
+            # If still empty → fallback using pdfminer API via requests
+            return ""
+
+        except Exception:
+            return ""
+
+    # ---------- DOCX ----------
     elif file_name.endswith(".docx"):
-        return docx2txt.process(uploaded_file)
+        try:
+            return docx2txt.process(uploaded_file)
+        except:
+            return ""
 
+    # ---------- TXT ----------
     elif file_name.endswith(".txt"):
-        return uploaded_file.read().decode("utf-8")
+        try:
+            return uploaded_file.read().decode("utf-8")
+        except:
+            return ""
 
     else:
         return ""
