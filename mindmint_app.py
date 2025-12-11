@@ -2,17 +2,14 @@ import streamlit as st
 import PyPDF2
 import docx2txt
 import os
-import groq
-
-# Load Groq client
-client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
+import requests
 
 st.set_page_config(page_title="MindMint | Smart Summarizer", page_icon="🧠")
 
 st.title("🧠 MindMint – Smart AI Summarizer")
-st.write("Upload any document and get an accurate, human-like summary powered by LLaMA 3.1 (Free!).")
+st.write("Upload any document and get an accurate, human-like summary powered by Gemini (Free).")
 
-# ---------------------- TEXT EXTRACTION --------------------------
+# ---------------------- TEXT EXTRACTION -------------------------
 def extract_text(uploaded_file):
     file_name = uploaded_file.name.lower()
 
@@ -32,46 +29,49 @@ def extract_text(uploaded_file):
         return ""
 
 
-# ---------------------- SUMMARIZER --------------------------
-def summarize_with_gpt(text):
-    CHUNK_SIZE = 4000  # LLaMA handles 4k chars safely
+# ---------------------- GEMINI SUMMARIZER --------------------------
+def gemini_request(prompt):
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "contents": [
+            {"parts": [{"text": prompt}]}
+        ]
+    }
+
+    params = {"key": os.getenv("GEMINI_API_KEY")}
+
+    response = requests.post(url, headers=headers, json=data, params=params)
+    response_json = response.json()
+
+    try:
+        return response_json["candidates"][0]["content"]["parts"][0]["text"]
+    except:
+        return "Error generating content."
+
+
+def summarize_large_document(text):
+    CHUNK_SIZE = 3500  
     chunks = [text[i:i + CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
 
     summaries = []
 
-    # Summarize each section
-    for i, chunk in enumerate(chunks[:10], start=1):  # limit to 10 chunks max
-        try:
-            response = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[
-                    {"role": "system", "content": "You are an expert academic summarizer."},
-                    {"role": "user", "content": f"Summarize this section:\n\n{chunk}"}
-                ],
-                max_tokens=300
-            )
+    for i, chunk in enumerate(chunks[:10], start=1):
+        prompt = f"Summarize this section clearly:\n\n{chunk}"
+        section_summary = gemini_request(prompt)
 
-            summaries.append(f"### Section {i} Summary\n" + response.choices[0].message.content)
-
-        except Exception as e:
-            summaries.append(f"### Section {i} Summary\n(Skipped due to error: {str(e)})")
+        summaries.append(f"### Section {i} Summary\n{section_summary}")
 
     combined = "\n\n".join(summaries)
 
-    # Final summary synthesis
-    final = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": "You are an expert summarizer."},
-            {"role": "user", "content": f"Create a final short summary of the following sections:\n\n{combined}"}
-        ],
-        max_tokens=250
-    )
+    final_prompt = f"Create one final summary from all sections:\n\n{combined}"
+    final_summary = gemini_request(final_prompt)
 
-    return final.choices[0].message.content
+    return final_summary
 
 
-# ---------------------- UI & EXECUTION --------------------------
+# ---------------------- UI EXECUTION --------------------------
 uploaded_file = st.file_uploader("Upload a file (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
 
 if uploaded_file:
@@ -80,16 +80,16 @@ if uploaded_file:
 
     if text and text.strip():
         try:
-            st.info("📄 Large document handling enabled. Summarizing in sections...")
+            st.info("📄 Large document handling enabled (Chunked Summary).")
 
             with st.spinner("Generating summary..."):
-                summary = summarize_with_gpt(text)
+                summary = summarize_large_document(text)
 
             st.success("✅ Summary generated")
             st.write(summary)
 
         except Exception as e:
-            st.error("⚠️ An error occurred while summarizing. Details below:")
+            st.error("⚠️ Error during summarization:")
             st.error(str(e))
 
     else:
