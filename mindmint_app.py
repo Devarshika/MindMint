@@ -57,7 +57,7 @@ def extract_text(uploaded_file):
 
 # ---------------------- GEMINI SUMMARIZER --------------------------
 def gemini_request(prompt):
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
 
     headers = {"Content-Type": "application/json"}
 
@@ -73,11 +73,11 @@ def gemini_request(prompt):
     params = {"key": os.getenv("GEMINI_API_KEY")}
 
     response = requests.post(url, headers=headers, json=data, params=params)
+
     try:
         return response.json()["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception as e:
+    except Exception:
         return f"ERROR: {response.text}"
-
 
 
 def summarize_large_document(text):
