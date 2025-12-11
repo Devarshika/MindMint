@@ -30,8 +30,7 @@ def extract_text(uploaded_file):
 
     else:
         return ""
-st.info("📄 Large document detected. Summaries will be generated section-by-section.")
-
+        
 def summarize_with_gpt(text):
     # Split text into safe chunks
     CHUNK_SIZE = 2000  # Processable without rate-limit
@@ -80,9 +79,6 @@ def summarize_with_gpt(text):
 
     return final_response.choices[0].message.content
 
-
-
-
 uploaded_file = st.file_uploader(
     "Upload a file (PDF, DOCX, TXT)",
     type=["pdf", "docx", "txt"]
@@ -94,16 +90,12 @@ if uploaded_file:
 
     if text and text.strip():
         try:
-            with st.spinner("Generating summary with GPT..."):
-                summary = summarize_with_gpt(text)
+    with st.spinner("Generating summary with GPT..."):
+        summary = summarize_with_gpt(text)
 
-            st.success("✅ Summary generated")
-            st.write(summary)
+    st.success("✅ Summary generated")
+    st.write(summary)
 
-        except Exception:
-            st.error(
-                "⚠️ The document is too large or the API limit "
-                "was reached. Please try a smaller file."
-            )
-    else:
-        st.error("❌ Could not extract text from the file.")
+except Exception as e:
+    st.error("⚠️ An error occurred while summarizing. See details below.")
+    st.error(str(e))
