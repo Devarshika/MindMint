@@ -93,9 +93,9 @@ if uploaded_file:
             with st.spinner("Generating summary with GPT..."):
                 summary = summarize_with_gpt(text)
 
-    st.success("✅ Summary generated")
-    st.write(summary)
+            st.success("✅ Summary generated")
+            st.write(summary)
+        except Exception as e:
+            st.error("⚠️ An error occurred while summarizing. Details below:")
+            st.error(str(e))
 
-except Exception as e:
-    st.error("⚠️ An error occurred while summarizing. See details below.")
-    st.error(str(e))
