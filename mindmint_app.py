@@ -60,21 +60,24 @@ def gemini_request(prompt):
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
     headers = {"Content-Type": "application/json"}
+
     data = {
         "contents": [
-            {"parts": [{"text": prompt}]}
+            {
+                "role": "user",
+                "parts": [{"text": prompt}]
+            }
         ]
     }
 
     params = {"key": os.getenv("GEMINI_API_KEY")}
 
     response = requests.post(url, headers=headers, json=data, params=params)
-    response_json = response.json()
-
     try:
-        return response_json["candidates"][0]["content"]["parts"][0]["text"]
-    except:
-        return "Error generating content."
+        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception as e:
+        return f"ERROR: {response.text}"
+
 
 
 def summarize_large_document(text):
