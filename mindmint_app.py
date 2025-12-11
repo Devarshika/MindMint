@@ -90,8 +90,8 @@ if uploaded_file:
 
     if text and text.strip():
         try:
-    with st.spinner("Generating summary with GPT..."):
-        summary = summarize_with_gpt(text)
+            with st.spinner("Generating summary with GPT..."):
+                summary = summarize_with_gpt(text)
 
     st.success("✅ Summary generated")
     st.write(summary)
