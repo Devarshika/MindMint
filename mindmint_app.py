@@ -2,6 +2,7 @@ import streamlit as st
 import PyPDF2
 import docx2txt
 import os
+import io
 import requests
 
 st.set_page_config(page_title="MindMint | Smart Summarizer", page_icon="🧠")
@@ -16,7 +17,8 @@ def extract_text(uploaded_file):
     # ---------- PDF Handling ----------
     if file_name.endswith(".pdf"):
         try:
-            reader = PyPDF2.PdfReader(uploaded_file)
+            pdf_bytes = uploaded_file.read()
+            reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
 
             text_pages = []
             for page in reader.pages:
@@ -26,13 +28,9 @@ def extract_text(uploaded_file):
                 except:
                     text_pages.append("")
 
-            full_text = "\n".join(text_pages)
+            uploaded_file.seek(0)
 
-            if full_text.strip():
-                return full_text
-
-            # If still empty → fallback using pdfminer API via requests
-            return ""
+            return "\n".join(text_pages)
 
         except Exception:
             return ""
@@ -57,14 +55,13 @@ def extract_text(uploaded_file):
 
 # ---------------------- GEMINI SUMMARIZER --------------------------
 def gemini_request(prompt):
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
 
     headers = {"Content-Type": "application/json"}
 
     data = {
         "contents": [
             {
-                "role": "user",
                 "parts": [{"text": prompt}]
             }
         ]
@@ -81,7 +78,7 @@ def gemini_request(prompt):
 
 
 def summarize_large_document(text):
-    CHUNK_SIZE = 3500  
+    CHUNK_SIZE = 3500
     chunks = [text[i:i + CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
 
     summaries = []
@@ -89,7 +86,6 @@ def summarize_large_document(text):
     for i, chunk in enumerate(chunks[:10], start=1):
         prompt = f"Summarize this section clearly:\n\n{chunk}"
         section_summary = gemini_request(prompt)
-
         summaries.append(f"### Section {i} Summary\n{section_summary}")
 
     combined = "\n\n".join(summaries)
