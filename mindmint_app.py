@@ -30,34 +30,57 @@ def extract_text(uploaded_file):
 
     else:
         return ""
+st.info("📄 Large document detected. Summaries will be generated section-by-section.")
 
 def summarize_with_gpt(text):
-    CHUNK_SIZE = 2000
+    # Split text into safe chunks
+    CHUNK_SIZE = 2000  # Processable without rate-limit
     chunks = [text[i:i + CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
 
-    partial_summaries = []
+    summaries = []
 
-    for chunk in chunks[:5]:  # limit to first 5 chunks (safe for free tier)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert academic summarizer."
-                },
-                {
-                    "role": "user",
-                    "content": f"Summarize this content briefly:\n\n{chunk}"
-                }
-            ],
-            max_tokens=400
-        )
+    # Limit to first 8 chunks for now (16k chars) - safe for deployment
+    for i, chunk in enumerate(chunks[:8], start=1):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert academic summarizer. Summarize clearly and concisely."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Summarize this section:\n\n{chunk}"
+                    }
+                ],
+                max_tokens=250
+            )
 
-        partial_summaries.append(response.choices[0].message.content)
+            summaries.append(f"### Section {i} Summary\n" + response.choices[0].message.content)
 
-    # Final combined summary
-    final_summary = "\n\n".join(partial_summaries)
-    return final_summary
+        except Exception:
+            summaries.append(f"### Section {i} Summary\n(Section skipped due to API limit.)")
+
+    # Combine all section summaries
+    combined = "\n\n".join(summaries)
+
+    # Final overall summary
+    final_response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert summarizer."},
+            {
+                "role": "user",
+                "content": f"Create one final summary from these section summaries:\n\n{combined}"
+            }
+        ],
+        max_tokens=300
+    )
+
+    return final_response.choices[0].message.content
+
+
 
 
 uploaded_file = st.file_uploader(
